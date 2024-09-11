@@ -1,50 +1,54 @@
 <template>
-  <section
-    :style="`background: ${options.color}`"
-    @drop="onDrop($event, options.id)"
-    @dragover.prevent
-    @dragenter.prevent
-  >
-    <div class="title">
-      <h2>
-        {{ options.title }}
-      </h2>
-      <div class="counter">
-        <span>{{ cards.length }}</span>
+  <div>
+    <SortingPanel :cards="cards" :options="options" @sort="switchSort" />
+    <section
+      :style="`background: ${options.color}`"
+      @drop="onDrop($event, options.id)"
+      @dragover.prevent
+      @dragenter.prevent
+    >
+      <div class="title">
+        <h2>
+          {{ options.title }}
+        </h2>
+        <div class="counter">
+          <span>{{ cards.length }}</span>
+        </div>
       </div>
-    </div>
-    <v-btn
-      icon="mdi-plus"
-      variant="tonal"
-      class="mt-5"
-      color="white"
-      @click="isNewCardDialogOpen = true"
-    />
+      <v-btn
+        icon="mdi-plus"
+        variant="tonal"
+        class="mt-5"
+        color="white"
+        @click="isNewCardDialogOpen = true"
+      />
 
-    <CardItem
-      v-for="(card, index) in cards"
-      draggable="true"
-      :key="index"
-      :card="card"
-      :options="props.options"
-      @delete-card="deleteCard(card.id)"
-      @dragstart="onDragStart($event, card)"
-    />
+      <CardItem
+        v-for="(card, id) in sortedCards"
+        draggable="true"
+        :key="id"
+        :card="card"
+        :options="props.options"
+        @delete-card="deleteCard(card.id)"
+        @dragstart="onDragStart($event, card)"
+      />
 
-    <CardForm
-      title="Добавление новой карточки"
-      v-model="isNewCardDialogOpen"
-      :form="form"
-      @save-card="addCard"
-      @close-form="isNewCardDialogOpen = false"
-    />
-  </section>
+      <CardForm
+        title="Добавление новой карточки"
+        v-model="isNewCardDialogOpen"
+        :form="form"
+        @save-card="addCard"
+        @close-form="isNewCardDialogOpen = false"
+      />
+    </section>
+  </div>
 </template>
 
 <script setup>
-import { ref, inject } from "vue";
+import { ref, inject, computed } from "vue";
 import CardItem from "./CardItem.vue";
 import CardForm from "./CardForm.vue";
+import SortingPanel from "./SortingPanel.vue";
 
 const firstList = inject("firstList");
 const secondList = inject("secondList");
@@ -55,6 +59,7 @@ const props = defineProps({
 });
 
 const isNewCardDialogOpen = ref(false);
+const currentSort = ref("none");
 
 const form = ref({
   image: "",
@@ -82,6 +87,20 @@ function getLocalCards() {
   }
 }
 getLocalCards();
+
+const sortedCards = computed(() => {
+  let sorted = [...cards.value];
+  if (currentSort.value === "asc") {
+    sorted.sort((a, b) => a.rating.rate - b.rating.rate);
+  } else if (currentSort.value === "desc") {
+    sorted.sort((a, b) => b.rating.rate - a.rating.rate);
+  }
+  return sorted;
+});
+
+function switchSort(sortType) {
+  currentSort.value = sortType;
+}
 
 function addCard() {
   cards.value.unshift(form.value);
